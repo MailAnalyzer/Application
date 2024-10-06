@@ -1,0 +1,50 @@
+
+
+.email-card {
+    background-color: white;
+    border: 0 solid;
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+
+    cursor: pointer;
+    user-select: none;
+
+    min-height: 75px;
+}
+
+/* had to do this cause the Progress components has a weird
+spacing that is not a padding/margin/border stuff*/
+.email-card-progress {
+    position: absolute;
+    bottom: -6px;
+}
+
+.email-card-error {
+    display: flex;
+    gap: 15px;
+}
+
+.email-card-subject, .email-card-id {
+    padding: 0 6px 0 6px;
+}
+
+.email-card-subject {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    font-weight: bold;
+}
+
+.email-card-id {
+    text-align: right;
+    color: #535bf2;
+}
+
+.email-card.exception {
+    background-color: #ffb4b4;
+}
+
+.email-card.success {
+    background-color: #c7dcae;
+}

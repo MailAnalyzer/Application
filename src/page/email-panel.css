@@ -1,0 +1,21 @@
+
+
+#email-panel {
+    width: 100%;
+    height: 100%;
+}
+
+#email-panel-header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+#email-panel-title {
+    font-weight: bold;
+    font-size: larger;
+}
+
+#email-panel-content {
+    width: 100%;
+}
