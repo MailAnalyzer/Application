@@ -1,4 +1,5 @@
 import {AnalysisResult, Job, JobDescription} from "../data/Job.ts";
+import PostalMime, {Email} from "postal-mime";
 
 
 export async function getAllJobs(): Promise<Job[]> {
@@ -37,4 +38,21 @@ function sse<A>(url: string, channel: string, listener: (result: A) => void): ()
     })
 
     return () => client.close();
+}
+
+export async function submitEmail(email: File) {
+    await fetch("http://localhost:8000/job", {
+        method: 'POST',
+        headers: {
+            "Content-Type": 'application/octet-stream'
+        },
+        body: await email.arrayBuffer(),
+        duplex: 'half'
+    })
+}
+
+export async function getEmail(jobId: number): Promise<Email> {
+    const response = await fetch(`http://localhost:8000/job/${jobId}/email`)
+    const emailString = await response.text()
+    return PostalMime.parse(emailString)
 }

@@ -4,8 +4,8 @@ import EmailCard from "./components/EmailCard.tsx";
 import EmailUploader from "./components/EmailUploader.tsx";
 import EmailPanel from "./page/EmailPanel.tsx";
 import {AnalyzerStateActionKind, useAnalyzerState} from "./data/AnalyzerState.ts";
-import {useEffect} from "react";
-import {getAllJobs, getAllJobsIds, listenJobEvents, listenNewJobEvents} from "./net/queries.ts";
+import {useCallback, useEffect} from "react";
+import {getAllJobs, getAllJobsIds, listenJobEvents, listenNewJobEvents, submitEmail} from "./net/queries.ts";
 
 export default function App() {
 
@@ -69,10 +69,16 @@ export default function App() {
         return () => socketsClosesFunctions.forEach(f => f());
     }, [])
 
+    const uploadFile = useCallback(async (files: FileList) => {
+        for (const file of files) {
+            await submitEmail(file);
+        }
+    }, [])
+
     return (
         <>
             <header id="header">
-                <EmailUploader onFilesUploaded={(f) => console.log(f)}/>
+                <EmailUploader onFilesUploaded={uploadFile}/>
                 <Search placeholder="input search text" style={{width: 200}}/>
             </header>
             <div id="content">
@@ -91,7 +97,7 @@ export default function App() {
                     {
                         selectedJob
                             ? <EmailPanel job={selectedJob}/>
-                            : <EmailUploader onFilesUploaded={(f) => console.log(f)}/>
+                            : <EmailUploader onFilesUploaded={uploadFile}/>
                     }
                 </div>
             </div>

@@ -17,7 +17,7 @@
 spacing that is not a padding/margin/border stuff*/
 .email-card-progress {
     position: absolute;
-    bottom: -6px;
+    bottom: -7px;
 }
 
 .email-card-error {
