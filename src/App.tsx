@@ -6,6 +6,7 @@ import EmailPanel from "./page/EmailPanel.tsx";
 import {AnalyzerStateActionKind, useAnalyzerState} from "./data/AnalyzerState.ts";
 import {useCallback, useEffect} from "react";
 import {getAllJobs, getAllJobsIds, listenJobEvents, listenNewJobEvents, submitEmail} from "./net/queries.ts";
+import {JobEventType} from "./data/Job.ts";
 
 export default function App() {
 
@@ -20,11 +21,29 @@ export default function App() {
         const socketsClosesFunctions: (() => void)[] = [];
 
         function handleNewJob(jobId: number) {
-            const closeFunction = listenJobEvents(jobId, (result) => dispatch({
-                type: AnalyzerStateActionKind.ADD_JOB_PROGRESS,
-                jobId,
-                result
-            }))
+            const closeFunction = listenJobEvents(jobId, (event) => {
+                console.log(event)
+                switch (event.type) {
+                    case JobEventType.PROGRESS: {
+                        dispatch({
+                            type: AnalyzerStateActionKind.ADD_JOB_PROGRESS,
+                            jobId,
+                            result: event.value
+                        })
+                        break;
+                    }
+                    case JobEventType.ERROR:
+                        console.error(event.value)
+                        break;
+                    case JobEventType.EXPANDED_RESULT_COUNT:
+                        dispatch({
+                            type: AnalyzerStateActionKind.UPDATE_JOB_EXPECTED_RESULT_COUNT,
+                            jobId,
+                            count: event.value
+                        })
+                        break;
+                }
+            })
 
             socketsClosesFunctions.push(closeFunction)
         }

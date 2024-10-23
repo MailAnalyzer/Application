@@ -1,9 +1,35 @@
+export enum JobEventType {
+    PROGRESS = "Progress",
+    ERROR = "Error",
+    EXPANDED_RESULT_COUNT = "ExpandedResultCount",
+    DONE = "Done",
+}
+
+export type JobEvent = {
+    type: JobEventType.PROGRESS,
+    value: AnalysisResult
+} | {
+    type: JobEventType.ERROR,
+    value: string,
+} | {
+    type: JobEventType.EXPANDED_RESULT_COUNT,
+    value: number
+} | {
+    type: JobEventType.DONE,
+}
+
 export interface AnalysisResult {
     id: number,
-    name: string,
-    description: string,
-    verdictDescription: string,
-    errors: string[],
+    analysisName: string,
+    verdict: AnalysisVerdict,
+}
+
+export type AnalysisVerdict = {
+    type: "Completed",
+    value: string
+} | {
+    type: "Error",
+    value: string[]
 }
 
 export interface Job {

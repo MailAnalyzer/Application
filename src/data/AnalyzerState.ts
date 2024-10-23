@@ -5,7 +5,8 @@ export enum AnalyzerStateActionKind {
     ADD_JOB,
     ADD_JOB_PROGRESS,
     SELECT_JOB,
-    SET_ALL_JOBS
+    SET_ALL_JOBS,
+    UPDATE_JOB_EXPECTED_RESULT_COUNT
 }
 
 export type AnalyzerStateAction = {
@@ -21,33 +22,16 @@ export type AnalyzerStateAction = {
 } | {
     type: AnalyzerStateActionKind.SET_ALL_JOBS;
     jobs: Job[];
+} | {
+    type: AnalyzerStateActionKind.UPDATE_JOB_EXPECTED_RESULT_COUNT;
+    jobId: number,
+    count: number;
 }
 
 export interface AnalyzerState {
     jobs: Job[]
     selectedJobId: number | null
 }
-
-// const DEFAULT_STATE = {
-//     jobs: [
-//         {
-//             subject: "Re: I'm a phishing",
-//             id: 1248,
-//             targetResultCount: 10,
-//             results: [{name: "test", description: "description", verdictDescription: "fake", errors: []}]
-//         },
-//         {subject: "Re: Important meeting", error: "Parsing Error", id: 42423, targetResultCount: 10, results: []},
-//         {
-//             subject: "Re: Elon musk's secret cousin",
-//             error: "Splunk API Error",
-//             id: 123214,
-//             targetResultCount: 10,
-//             results: []
-//         },
-//         {subject: "Re: Jeux Olympiques Paris 2024", id: 452, targetResultCount: 10, results: []},
-//         {subject: "Re: This is a very long email subject", id: 2314, targetResultCount: 10, results: []},
-//     ], selectedJobId: null
-// };
 
 const DEFAULT_STATE = {
     jobs: [], selectedJobId: null
@@ -65,7 +49,7 @@ function analyzerStateReducer(state: AnalyzerState, action: AnalyzerStateAction)
             return {...state, selectedJobId: action.jobId};
         case AnalyzerStateActionKind.SET_ALL_JOBS:
             return {...state, jobs: action.jobs};
-        case AnalyzerStateActionKind.ADD_JOB_PROGRESS:
+        case AnalyzerStateActionKind.ADD_JOB_PROGRESS: {
             const jobIndex = state.jobs.findIndex(j => j.id === action.jobId);
             const currentJob = state.jobs[jobIndex];
             const job = {
@@ -74,5 +58,16 @@ function analyzerStateReducer(state: AnalyzerState, action: AnalyzerStateAction)
             };
             const jobs = state.jobs.toSpliced(jobIndex, 1, job)
             return {...state, jobs: jobs}
+        }
+        case AnalyzerStateActionKind.UPDATE_JOB_EXPECTED_RESULT_COUNT: {
+            const jobIndex = state.jobs.findIndex(j => j.id === action.jobId);
+            const currentJob = state.jobs[jobIndex];
+            const job = {
+                ...currentJob,
+                targetResultCount: action.count
+            };
+            const jobs = state.jobs.toSpliced(jobIndex, 1, job)
+            return {...state, jobs: jobs}
+        }
     }
 }

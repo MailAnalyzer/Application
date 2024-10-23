@@ -48,11 +48,9 @@ export default function EmailPanel({job}: EmailPanelProps) {
                 {
                     title: "analysis",
                     render: () => Array.from(job.results.values())
-                        .map((j, i) => <div key={i}>
-                        <div><strong>name: </strong>{j.name}</div>
-                            <div><strong>description: </strong>{j.description}</div>
-                            <div><strong>verdict description: </strong>{j.verdictDescription}</div>
-                            <div><strong>errors: </strong>{j.errors.join(", ")}</div>
+                        .map((v, i) => <div key={i}>
+                        <div><strong>name: </strong>{v.analysisName}</div>
+                            <div><strong>value: </strong>{JSON.stringify(v.verdict)}</div>
                             <div>-----------------------------</div>
                         </div>)
                 },

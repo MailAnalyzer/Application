@@ -1,4 +1,4 @@
-import {AnalysisResult, Job, JobDescription} from "../data/Job.ts";
+import {AnalysisResult, Job, JobDescription, JobEvent} from "../data/Job.ts";
 import PostalMime, {Email} from "postal-mime";
 
 
@@ -19,7 +19,7 @@ export async function getAllJobsIds(): Promise<number[]> {
     return await response.json();
 }
 
-export function listenJobEvents(jobId: number, listener: (result: AnalysisResult) => void): () => void {
+export function listenJobEvents(jobId: number, listener: (result: JobEvent) => void): () => void {
     return sse(`http://localhost:8000/job/${jobId}/events`, "result", listener)
 }
 
