@@ -22,7 +22,6 @@ export default function App() {
 
         function handleNewJob(jobId: number) {
             const closeFunction = listenJobEvents(jobId, (event) => {
-                console.log(event)
                 switch (event.type) {
                     case JobEventType.PROGRESS: {
                         dispatch({

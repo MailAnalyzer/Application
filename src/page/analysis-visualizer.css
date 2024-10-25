@@ -1,0 +1,58 @@
+
+.analysis-stats-engines, .analysis-votes {
+    display: flex;
+    align-self: flex-start;
+}
+
+.analysis-visualizer .malicious {
+    color: red;
+}
+
+.analysis-visualizer .suspicious {
+    color: orange;
+}
+
+.analysis-visualizer .harmless {
+    color: green;
+}
+
+.analysis-visualizer .unknown {
+    color: gray;
+}
+
+.analysis-url-preview, .analysis-domain-preview {
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    background-color: #ececff;
+}
+
+.analysis-url-preview:hover, .analysis-domain-preview:hover, .line-selected {
+    background-color: #cbcbed;
+}
+
+.analysis-urls-stats {
+    display: flex;
+    gap: 5px;
+}
+
+.analysis-votes .reputation {
+    padding-left: 5px;
+}
+
+.url-preview, .domain-preview {
+    padding-left: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.analysis-email {
+    display: flex;
+    flex-direction: column;
+}
+
+.analysis-email-line {
+    display: flex;
+    gap: 3px;
+}

@@ -18,6 +18,7 @@
     "@servicestack/client": "^2.1.5",
     "@types/postal": "^1.0.35",
     "antd": "^5.21.1",
+    "mailauth": "^4.7.3",
     "postal-mime": "^2.3.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

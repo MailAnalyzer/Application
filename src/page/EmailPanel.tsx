@@ -5,6 +5,7 @@ import EmailVisualizer from "../components/EmailVisualizer.tsx";
 import {useCallback, useEffect, useState} from "react";
 import {Email, Header} from "postal-mime";
 import {getEmail} from "../net/queries.ts";
+import AnalysisVisualizer from "./AnalysisVisualizer.tsx";
 
 export interface EmailPanelProps {
     job: Job
@@ -12,23 +13,23 @@ export interface EmailPanelProps {
 
 export default function EmailPanel({job}: EmailPanelProps) {
 
-    const [emailContent, setEmailContent] = useState<Email | null>(null);
+    const [emailString, setEmailString] = useState<Email | null>(null);
 
     useEffect(() => {
-        getEmail(job.id).then(setEmailContent)
+        getEmail(job.id).then(setEmailString)
     }, [job.id])
 
-    const visualizeEmail = useCallback(() => emailContent
-        ? <EmailVisualizer email={emailContent} />
-        : "Retrieving email ...", [emailContent])
+    const visualizeEmail = useCallback(() => emailString
+        ? <EmailVisualizer email={emailString} />
+        : "Retrieving email ...", [emailString])
 
-    const visualizeHeaders = useCallback(() => emailContent
-        ? <div className={"email-headers"}>
-            {emailContent.headers.map(({key, value}: Header, idx) =>
+    const visualizeHeaders = useCallback(() => emailString
+        ? <div className={"email-headers data-text"}>
+            {emailString.headers.map(({key, value}: Header, idx) =>
                 <div key={idx}><strong>{key}</strong>: {value}</div>
             )}
         </div>
-        : "Retrieving email ...", [emailContent])
+        : "Retrieving email ...", [emailString])
 
     return <div id={"email-panel"}>
         <div id="email-panel-header">
@@ -47,12 +48,7 @@ export default function EmailPanel({job}: EmailPanelProps) {
                 },
                 {
                     title: "analysis",
-                    render: () => Array.from(job.results.values())
-                        .map((v, i) => <div key={i}>
-                        <div><strong>name: </strong>{v.analysisName}</div>
-                            <div><strong>value: </strong>{JSON.stringify(v.verdict)}</div>
-                            <div>-----------------------------</div>
-                        </div>)
+                    render: () => <AnalysisVisualizer job={job} emailHeaders={emailString?.headers ?? null}/>
                 },
             ]}/>
         </div>

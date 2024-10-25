@@ -25,11 +25,8 @@ export interface AnalysisResult {
 }
 
 export type AnalysisVerdict = {
-    type: "Completed",
+    kind: string,
     value: string
-} | {
-    type: "Error",
-    value: string[]
 }
 
 export interface Job {

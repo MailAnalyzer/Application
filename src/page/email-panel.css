@@ -2,7 +2,7 @@
 
 #email-panel {
     width: 100%;
-    height: 100%;
+    height: 80%;
 }
 
 #email-panel-header {
@@ -18,4 +18,8 @@
 
 #email-panel-content {
     width: 100%;
+}
+
+.data-text {
+    font-family: monospace;
 }

@@ -1,0 +1,18 @@
+.analysis-details {
+    background-color: #cbcbed;
+}
+
+ .analysis-details {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+ .analysis-details-head {
+     width: 100%;
+     display: flex;
+ }
+
+.analysis-details .line {
+    display: flex;
+    gap: 5px;
+}
