@@ -16,3 +16,11 @@
     display: flex;
     gap: 5px;
 }
+
+.line-community-votes {
+    padding-left: 25px;
+}
+
+.vt-engines-stats {
+    margin-bottom: 25px;
+}

@@ -89,7 +89,7 @@ export interface UrlReportAttributes {
     last_analysis_stats: AnalysisStats,
     last_final_url: string,
     outgoing_links: string[],
-    redirection_chain: string[],
+    redirection_chain?: string[],
     reputation: number,
     tags: string[],
     targeted_brand: { [key: string]: string },
@@ -284,23 +284,59 @@ function UrlsSection({urls}: UrlsSectionProps) {
     return <div className={"analysis-urls"}>
         {sortedUrls.map(report => {
             const url = report.attributes.url
-            return (
-                <div key={url} className="analysis-url">
-                    <div className={`analysis-url-preview ${url === selectedUrl ? "line-selected" : ""}`}
-                         onClick={() => setSelectedUrl(url)}>
-                        <AnalysisStatsPreview
-                            lastAnalysisStats={report.attributes.last_analysis_stats}
-                            communityVotes={report.attributes.total_votes}
-                            reputation={report.attributes.reputation}
-                        />
-                        <div className={"url-preview"}>{url}</div>
-                        <div></div>
-                    </div>
-                    {selectedUrl === url && <UrlOrDomainDetails report={report}/>}
-                </div>
-            )
+            return <UrlReportView
+                key={url}
+                url={report}
+                isSelected={selectedUrl === url}
+                onClick={() => setSelectedUrl(url)}
+            />
         })}
     </div>
+}
+
+interface UrlReportViewProps {
+    url: UrlReport
+    isSelected: boolean
+    onClick: () => void
+}
+
+function UrlReportView({url, isSelected, onClick}: UrlReportViewProps) {
+    const attributes = url.attributes
+
+    return (
+        <div className="analysis-url">
+            <div className={`analysis-url-preview ${isSelected ? "line-selected" : ""}`}
+                 onClick={onClick}>
+                <AnalysisStatsPreview
+                    lastAnalysisStats={attributes.last_analysis_stats}
+                    communityVotes={attributes.total_votes}
+                    reputation={attributes.reputation}
+                />
+                <div className={"url-preview"}>{attributes.url}</div>
+                <div></div>
+            </div>
+            {isSelected && <UrlOrDomainDetails
+                report={url}
+            >
+                {(attributes.redirection_chain?.length ?? 0) > 1 &&
+                    <Category title={"Redirection Chain"}>
+                        {attributes.redirection_chain?.map((url, idx) => <div key={url}
+                                                                              className="url-preview">{idx}: {url}</div>)}
+                    </Category>
+                }
+                {(attributes.targeted_brand &&
+                    <Category title={"Targeted Brand Detection"}>
+                        <div>This category show the targeted brand detected by VT engines if any phishing is detected in
+                            the URL
+                        </div>
+                        {Object.entries(attributes.targeted_brand).map(([engine, brand]) => (
+                            <div key={engine}><strong>{engine}</strong>: {brand}</div>
+                        ))}
+                    </Category>
+                )}
+            </UrlOrDomainDetails>}
+        </div>
+    )
 }
 
 interface DomainsSectionProps {
@@ -348,8 +384,10 @@ function DomainReportView({domain, isSelected, onClick}: DomainReportViewProps) 
             </div>
             {isSelected && <UrlOrDomainDetails report={domain}>
                 <Category title={"DNS"}>
-                    {sortedDomainRecords.map(record => <DNSRecordView key={record.value}
-                                                                      record={record}/>)}
+                    {sortedDomainRecords.map((record, idx) => <DNSRecordView
+                        key={idx}
+                        record={record}
+                    />)}
                 </Category>
                 <Category title={"Whois"}>
                     <div style={{display: "flex"}}><strong>Last VT whois
