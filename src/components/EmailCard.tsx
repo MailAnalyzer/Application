@@ -15,7 +15,7 @@ export default function EmailCard({job, onClick}: EmailCardProps) {
 
     const progress = error ? 100 : (results.size / targetResultCount) * 100;
 
-    const status = error ? "exception" : progress === 100 ? "success" : "normal"
+    const status = error ? "exception" : progress >= 100 ? "success" : "normal"
 
     return <div className={`email-card ${status}`} onClick={onClick}>
         <div className="email-card-subject">{subject}</div>

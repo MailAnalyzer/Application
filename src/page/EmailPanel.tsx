@@ -13,23 +13,23 @@ export interface EmailPanelProps {
 
 export default function EmailPanel({job}: EmailPanelProps) {
 
-    const [emailString, setEmailString] = useState<Email | null>(null);
+    const [email, setEmail] = useState<Email | null>(null);
 
     useEffect(() => {
-        getEmail(job.id).then(setEmailString)
+        getEmail(job.id).then(setEmail)
     }, [job.id])
 
-    const visualizeEmail = useCallback(() => emailString
-        ? <EmailVisualizer email={emailString} />
-        : "Retrieving email ...", [emailString])
+    const visualizeEmail = useCallback(() => email
+        ? <EmailVisualizer email={email} />
+        : "Retrieving email ...", [email])
 
-    const visualizeHeaders = useCallback(() => emailString
+    const visualizeHeaders = useCallback(() => email
         ? <div className={"email-headers data-text"}>
-            {emailString.headers.map(({key, value}: Header, idx) =>
+            {email.headers.map(({key, value}: Header, idx) =>
                 <div key={idx}><strong>{key}</strong>: {value}</div>
             )}
         </div>
-        : "Retrieving email ...", [emailString])
+        : "Retrieving email ...", [email])
 
     return <div id={"email-panel"}>
         <div id="email-panel-header">
@@ -39,17 +39,21 @@ export default function EmailPanel({job}: EmailPanelProps) {
         <div id="email-panel-content">
             <Folder tabs={[
                 {
-                    title: "email",
+                    title: "Email",
                     render: visualizeEmail
                 },
                 {
-                    title: "headers",
+                    title: "Headers",
                     render: visualizeHeaders
                 },
                 {
-                    title: "analysis",
-                    render: () => <AnalysisVisualizer job={job} emailHeaders={emailString?.headers ?? null}/>
+                    title: "Analysis",
+                    render: () => <AnalysisVisualizer job={job} emailHeaders={email?.headers ?? null}/>
                 },
+                {
+                    title: "Report",
+                    render: () => <p>Report will be available once analysis is complete.</p>
+                }
             ]}/>
         </div>
     </div>

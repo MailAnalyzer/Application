@@ -1,10 +1,10 @@
-import {AnalysisResult, Job} from "../data/Job.ts";
 import {useMemo, useState} from "react";
 
 import "./analysis-visualizer.css"
-import {Header} from "postal-mime";
 import UrlOrDomainDetails from "../components/UrlOrDomainDetails.tsx";
 import Category from "../components/Category.tsx";
+import {AnalysisResult, Job} from "../data/Job.ts";
+import {Header} from "postal-mime";
 
 export interface AnalysisVisualizerProps {
     job: Job
@@ -157,25 +157,29 @@ function computeAnalyses(analyses: AnalysisResult[]): TriedAnalyses {
         dmarc: null
     }
 
-    for (const analyse of analyses) {
-        switch (analyse.verdict.kind) {
+    for (const analysis of analyses) {
+        const verdict = analysis.verdict
+        switch (verdict.kind) {
+            case "error":
+                console.log("received erroned analysis : ", analysis)
+                break;
             case "url":
-                triedAnalyses.urls.push(JSON.parse(analyse.verdict.value).data)
+                triedAnalyses.urls.push(JSON.parse(verdict.value).data)
                 break;
             case "domain":
-                triedAnalyses.domains.push(JSON.parse(analyse.verdict.value).data)
+                triedAnalyses.domains.push(JSON.parse(verdict.value).data)
                 break
             case "auth-dkim":
-                triedAnalyses.dkim = analyse.verdict.value
+                triedAnalyses.dkim = verdict.value
                 break
             case "auth-spf":
-                triedAnalyses.spf = analyse.verdict.value
+                triedAnalyses.spf = verdict.value
                 break
             case "auth-arc-chain":
-                triedAnalyses.arc = analyse.verdict.value
+                triedAnalyses.arc = verdict.value
                 break
             case "auth-dmarc":
-                triedAnalyses.dmarc = analyse.verdict.value
+                triedAnalyses.dmarc = verdict.value
                 break
         }
     }
@@ -183,7 +187,7 @@ function computeAnalyses(analyses: AnalysisResult[]): TriedAnalyses {
     return triedAnalyses
 }
 
-export default function AnalysisVisualizer({job}: AnalysisVisualizerProps) {
+export default function AnalysisVisualizer({job, emailHeaders}: AnalysisVisualizerProps) {
 
     const analyses = useMemo(() => computeAnalyses(Array.from(job.results.values())), [job.results])
 
@@ -198,11 +202,47 @@ export default function AnalysisVisualizer({job}: AnalysisVisualizerProps) {
             <DomainsSection domains={analyses.domains}/>
         </Category>
 
-        <Category title="Email">
-            <EmailSection dkim={analyses.dkim} spf={analyses.spf} arc={analyses.arc} dmarc={analyses.dmarc}/>
-        </Category>
+        <div style={{display: "flex"}}>
+            <Category title="Email">
+                <EmailSection dkim={analyses.dkim} spf={analyses.spf} arc={analyses.arc} dmarc={analyses.dmarc}/>
+            </Category>
+            {emailHeaders && <EmailHeaders headers={emailHeaders}/>}
+        </div>
+
 
     </div>
+}
+
+interface EmailHeadersProps {
+    headers: Header[]
+}
+
+function EmailHeaders({headers}: EmailHeadersProps) {
+
+    const from = useMemo(() => headers.find(h => h.key === "from")?.value ?? "<unset>", [headers])
+    const to = useMemo(() => headers.find(h => h.key === "to")?.value ?? "<unset>", [headers])
+    const date = useMemo(() => headers.find(h => h.key === "date")?.value ?? "<unset>", [headers])
+    const returnPath = useMemo(() => headers.find(h => h.key === "return-path")?.value ?? "<unset>", [headers])
+
+    return (
+        <Category title="Info">
+            <div className={"line"}>
+                <strong>From</strong> : {from}
+            </div>
+            <div className={"line"}>
+                <strong>To</strong> : {to}
+            </div>
+            <div className={"line"}>
+                <strong>Date</strong> : {date}
+            </div>
+            <div className={"line"}>
+                <strong>Return-Path</strong> : {returnPath}
+            </div>
+            {
+                returnPath !== from && <div className="suspicious">/!\ From and Return-Path are not equivalent</div>
+            }
+        </Category>
+    )
 }
 
 interface EmailSectionProps {
@@ -278,6 +318,7 @@ interface UrlsSectionProps {
 
 function UrlsSection({urls}: UrlsSectionProps) {
 
+    console.log(urls)
     const sortedUrls = useMemo(() => urls.toSorted((a, b) => a.attributes.reputation - b.attributes.reputation), [urls])
     const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
 
