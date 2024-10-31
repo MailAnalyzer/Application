@@ -54,7 +54,7 @@ function analyzerStateReducer(state: AnalyzerState, action: AnalyzerStateAction)
             const currentJob = state.jobs[jobIndex];
             const job = {
                 ...currentJob,
-                results: currentJob.results.set(action.result.id, action.result)
+                results: new Map(currentJob.results.set(action.result.id, action.result))
             };
             const jobs = state.jobs.toSpliced(jobIndex, 1, job)
             return {...state, jobs: jobs}

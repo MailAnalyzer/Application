@@ -26,7 +26,7 @@ export interface AnalysisResult {
 
 export type AnalysisVerdict = {
     kind: string,
-    value: string
+    value: any
 }
 
 export interface Job {

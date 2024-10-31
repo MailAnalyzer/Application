@@ -5,6 +5,7 @@ import UrlOrDomainDetails from "../components/UrlOrDomainDetails.tsx";
 import Category from "../components/Category.tsx";
 import {AnalysisResult, Job} from "../data/Job.ts";
 import {Header} from "postal-mime";
+import * as E from "fp-ts/Either";
 
 export interface AnalysisVisualizerProps {
     job: Job
@@ -74,6 +75,21 @@ export interface DNSRecord {
     value: string
 }
 
+interface Error {
+    code: string,
+    message: string
+}
+
+interface TaggedUrl {
+    report: E.Either<Error, UrlReport>;
+    tags: string[]
+}
+
+interface TaggedDomain {
+    report: E.Either<Error, DomainReport>,
+    tags: string[]
+}
+
 export interface UrlReport {
     attributes: UrlReportAttributes
 }
@@ -113,15 +129,26 @@ export interface UrlAnalysisResult {
     result: string
 }
 
+interface Entity {
+    type: string,
+    name: string,
+    invest: EntityInvestigationResults | null
+}
+
+interface EntityInvestigationResults {
+    is_known_on_internet: boolean,
+}
 
 export interface TriedAnalyses {
-    urls: UrlReport[],
-    domains: DomainReport[],
+    urls: TaggedUrl[],
+    domains: TaggedDomain[],
     other: AnalysisResult[],
+    entities: Entity[],
     dkim: DKIMAnalysisResult | null,
     spf: SPFAnalysisResult | null,
     arc: DKIMAnalysisVerdict | null,
     dmarc: DMARCAnalysisResult | null,
+    summary: string | null,
 }
 
 type DKIMAnalysisVerdict = {
@@ -151,35 +178,58 @@ function computeAnalyses(analyses: AnalysisResult[]): TriedAnalyses {
         urls: [],
         domains: [],
         other: [],
+        entities: [],
         spf: null,
         arc: null,
         dkim: null,
-        dmarc: null
+        dmarc: null,
+        summary: null,
     }
 
     for (const analysis of analyses) {
-        const verdict = analysis.verdict
-        switch (verdict.kind) {
+        const value = analysis.verdict.value
+        switch (analysis.verdict.kind) {
             case "error":
                 console.log("received erroned analysis : ", analysis)
                 break;
             case "url":
-                triedAnalyses.urls.push(JSON.parse(verdict.value).data)
+                triedAnalyses.urls.push({
+                    report: value.report.data ? E.right(value.report.data) : E.left(value.report.error),
+                    tags: value.tags,
+                })
                 break;
             case "domain":
-                triedAnalyses.domains.push(JSON.parse(verdict.value).data)
+                triedAnalyses.domains.push({
+                    report: value.report.data ? E.right(value.report.data) : E.left(value.report.error),
+                    tags: value.tags,
+                })
                 break
             case "auth-dkim":
-                triedAnalyses.dkim = verdict.value
+                triedAnalyses.dkim = value
                 break
             case "auth-spf":
-                triedAnalyses.spf = verdict.value
+                triedAnalyses.spf = value
                 break
             case "auth-arc-chain":
-                triedAnalyses.arc = verdict.value
+                triedAnalyses.arc = value
                 break
             case "auth-dmarc":
-                triedAnalyses.dmarc = verdict.value
+                triedAnalyses.dmarc = value
+                break
+            case "nlp-summary":
+                triedAnalyses.summary = value
+                break
+            case "entity":
+                triedAnalyses.entities.push(value)
+                break
+            case "entity-investigation":
+                const entity = triedAnalyses.entities.find(entity => entity.name === value.entity.name && entity.type === value.entity.type)
+                if (entity === undefined) {
+                    console.log("received investigation result for an unknown entity : ", value)
+                    break
+                }
+                const {entity: e, ...results} = value
+                entity.invest = results
                 break
         }
     }
@@ -191,8 +241,18 @@ export default function AnalysisVisualizer({job, emailHeaders}: AnalysisVisualiz
 
     const analyses = useMemo(() => computeAnalyses(Array.from(job.results.values())), [job.results])
 
-
     return <div className={"analysis-visualizer"}>
+
+        <Category title="Email Summary">
+            {analyses.summary ?? "Waiting for LLM..."}
+        </Category>
+
+        <Category title="Related Entities">
+            {analyses.entities.length > 0 ? analyses.entities.map(entity => (
+                <EntityView entity={entity}
+                            key={entity.name + entity.type}/>
+            )) : "No entity found"}
+        </Category>
 
         <Category title="URLS">
             <UrlsSection urls={analyses.urls}/>
@@ -204,11 +264,32 @@ export default function AnalysisVisualizer({job, emailHeaders}: AnalysisVisualiz
 
         <div style={{display: "flex"}}>
             <Category title="Email">
-                <EmailSection dkim={analyses.dkim} spf={analyses.spf} arc={analyses.arc} dmarc={analyses.dmarc}/>
+                <EmailSection {...analyses}/>
             </Category>
             {emailHeaders && <EmailHeaders headers={emailHeaders}/>}
         </div>
 
+
+    </div>
+}
+
+interface EntityViewProps {
+    entity: Entity
+}
+
+function EntityView({entity}: EntityViewProps) {
+    console.log(entity)
+    return <div className={"entity-view"}>
+        <div className="line"><strong>{entity.name}</strong> ({entity.type})</div>
+        <div className={"entity-invest-details"}>
+            {entity.invest
+                ? Object.entries(entity.invest)
+                    .map(([key, value]) => (
+                        <div className={"line"} key={key}><strong>{key}</strong>: {value.toString()}</div>
+                    ))
+                : "Investigating..."
+            }
+        </div>
 
     </div>
 }
@@ -312,22 +393,27 @@ function EmailSection({dkim, spf, arc, dmarc}: EmailSectionProps) {
 }
 
 interface UrlsSectionProps {
-    urls: UrlReport[]
+    urls: TaggedUrl[]
 }
 
 
 function UrlsSection({urls}: UrlsSectionProps) {
-
-    console.log(urls)
-    const sortedUrls = useMemo(() => urls.toSorted((a, b) => a.attributes.reputation - b.attributes.reputation), [urls])
+    const sortedUrls = useMemo(() => urls.toSorted((a, b) => (
+        E.isRight(a.report) && E.isRight(b.report)
+            ? a.report.right.attributes.reputation - b.report.right.attributes.reputation
+            : 0
+    )), [urls])
     const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
 
     return <div className={"analysis-urls"}>
-        {sortedUrls.map(report => {
-            const url = report.attributes.url
+        {sortedUrls.map((taggedUrl, idx) => {
+            if (E.isLeft(taggedUrl.report)) {
+                return <div key={idx}>ERROR!</div>
+            }
+            const url = taggedUrl.report.right.attributes.url
             return <UrlReportView
                 key={url}
-                url={report}
+                url={taggedUrl}
                 isSelected={selectedUrl === url}
                 onClick={() => setSelectedUrl(url)}
             />
@@ -336,13 +422,19 @@ function UrlsSection({urls}: UrlsSectionProps) {
 }
 
 interface UrlReportViewProps {
-    url: UrlReport
+    url: TaggedUrl
     isSelected: boolean
     onClick: () => void
 }
 
+//TODO can be factorized with DomainReportView
 function UrlReportView({url, isSelected, onClick}: UrlReportViewProps) {
-    const attributes = url.attributes
+
+    if (E.isLeft(url.report)) {
+        return <div></div>
+    }
+
+    const attributes = url.report.right.attributes
 
     return (
         <div className="analysis-url">
@@ -353,11 +445,11 @@ function UrlReportView({url, isSelected, onClick}: UrlReportViewProps) {
                     communityVotes={attributes.total_votes}
                     reputation={attributes.reputation}
                 />
-                <div className={"url-preview"}>{attributes.url}</div>
+                <div className={"url-preview"}>{attributes.url} (<strong>{url.tags.join(", ")}</strong>)</div>
                 <div></div>
             </div>
             {isSelected && <UrlOrDomainDetails
-                report={url}
+                report={url.report.right}
             >
                 {(attributes.redirection_chain?.length ?? 0) > 1 &&
                     <Category title={"Redirection Chain"}>
@@ -381,37 +473,51 @@ function UrlReportView({url, isSelected, onClick}: UrlReportViewProps) {
 }
 
 interface DomainsSectionProps {
-    domains: DomainReport[]
+    domains: TaggedDomain[]
 }
 
 function DomainsSection({domains}: DomainsSectionProps) {
 
-    const sortedDomains = useMemo(() => domains.toSorted((a, b) => a.attributes.reputation - b.attributes.reputation), [domains])
+    const sortedDomains = useMemo(() => domains.toSorted((a, b) => (
+        E.isRight(a.report) && E.isRight(b.report)
+            ? a.report.right.attributes.reputation - b.report.right.attributes.reputation
+            : 0
+    )), [domains])
     const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
 
+
     return <div className={"analysis-domains"}>
-        {sortedDomains.map(domain => <DomainReportView
-            key={domain.id}
-            domain={domain}
-            isSelected={domain.id === selectedDomain}
-            onClick={() => setSelectedDomain(domain.id)}/>
+        {sortedDomains.map((domain, idx) => {
+                if (E.isLeft(domain.report)) {
+                    return <div key={idx}>ERROR!</div>
+                }
+                const report = domain.report.right;
+                return <DomainReportView
+                    key={report.id}
+                    report={domain.report.right}
+                    tags={domain.tags}
+                    isSelected={report.id === selectedDomain}
+                    onClick={() => setSelectedDomain(report.id)}/>
+            }
         )}
     </div>
 }
 
 interface DomainReportViewProps {
-    domain: DomainReport
+    report: DomainReport,
+    tags: string[]
     isSelected: boolean
     onClick: () => void
 }
 
-function DomainReportView({domain, isSelected, onClick}: DomainReportViewProps) {
+function DomainReportView({report, isSelected, onClick, tags}: DomainReportViewProps) {
 
-    const attributes = domain.attributes
+    const attributes = report.attributes
+    const id = report.id
     const sortedDomainRecords = useMemo(() => attributes.last_dns_records.toSorted((a, b) => a.type.localeCompare(b.type)), [attributes.last_dns_records])
 
     return (
-        <div key={domain.id} className="analysis-domain">
+        <div key={id} className="analysis-domain">
             <div
                 className={`analysis-domain-preview ${isSelected ? "line-selected" : ""}`}
                 onClick={onClick}>
@@ -420,10 +526,10 @@ function DomainReportView({domain, isSelected, onClick}: DomainReportViewProps) 
                     communityVotes={attributes.total_votes}
                     reputation={attributes.reputation}
                 />
-                <div className={"domain-preview"}>{domain.id}</div>
+                <div className={"domain-preview"}>{id} (<strong>{tags.join(", ")}</strong>)</div>
                 <div></div>
             </div>
-            {isSelected && <UrlOrDomainDetails report={domain}>
+            {isSelected && <UrlOrDomainDetails report={report}>
                 <Category title={"DNS"}>
                     {sortedDomainRecords.map((record, idx) => <DNSRecordView
                         key={idx}

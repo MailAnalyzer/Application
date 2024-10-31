@@ -45,6 +45,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+    display: flex;
 }
 
 .analysis-email {
@@ -55,4 +56,13 @@
 .analysis-email-line {
     display: flex;
     gap: 3px;
+}
+
+.entity-view {
+    display: flex;
+    flex-direction: column;
+}
+
+.entity-invest-details .line {
+    padding-left: 15px;
 }

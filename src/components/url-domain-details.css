@@ -12,7 +12,7 @@
      display: flex;
  }
 
-.analysis-details .line {
+.line {
     display: flex;
     gap: 5px;
 }
